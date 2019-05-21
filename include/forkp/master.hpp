@@ -29,7 +29,7 @@ namespace forkp {
  */
 
 extern void signal_init();
-extern void boost_log_init(const string& prefix);
+// extern void boost_log_init(const string& prefix);
 extern void backtrace_init();
 
 typedef function<bool()> InitFunc;
@@ -86,7 +86,10 @@ public:
         Worker_Ptr node = make_shared<Worker>(name, cwd, exec, argv);
         WorkerStat_Ptr workstat = make_shared<WorkerStat_t>();
         if (!node || !workstat)
+        {
+            std::cout << "worker construct failed!" << std::endl;
             return false;
+        }
 
         // 首次启动参数
         workstat->start_tm = ::time(NULL);
@@ -146,7 +149,7 @@ public:
 
         if (workstat->out_log_fd < 0) {
             char file[PATH_MAX];
-            snprintf(file, PATH_MAX, "./log/%s_%d.log", workstat->worker->proc_title_,
+            snprintf(file, PATH_MAX, "/tmp/log/%s_%d.log", workstat->worker->proc_title_,
                      workstat->start_pid);
             workstat->out_log_fd = open(file, O_CREAT|O_WRONLY|O_APPEND, 0640);
             if (workstat->out_log_fd < 0)
@@ -517,7 +520,7 @@ private:
     {}
 
     bool Init() {
-    	boost_log_init("forkpRun");
+    	// boost_log_init("forkpRun");
         backtrace_init();
         signal_init();
 

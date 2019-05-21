@@ -1,4 +1,4 @@
-#include "general.hpp"
+#include "forkp/general.hpp"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -14,7 +14,7 @@
 #include <boost/log/attributes/named_scope.hpp>
 #include <boost/log/support/date_time.hpp>
 
-#include "master.hpp"
+#include "forkp/master.hpp"
 
 namespace forkp {
 
@@ -72,34 +72,34 @@ namespace forkp {
     namespace blog_keyw = boost::log::keywords;
     namespace blog_attr = boost::log::attributes;
 
-    void boost_log_init(const string& prefix) {
-        boost::log::add_common_attributes();
-        //boost::log::core::get()->add_global_attribute("Scope",  blog_attr::named_scope());
-        boost::log::core::get()->add_global_attribute("Uptime", blog_attr::timer());
+    // void boost_log_init(const string& prefix) {
+    //     boost::log::add_common_attributes();
+    //     //boost::log::core::get()->add_global_attribute("Scope",  blog_attr::named_scope());
+    //     boost::log::core::get()->add_global_attribute("Uptime", blog_attr::timer());
 
-        boost::log::add_file_log(
-            blog_keyw::file_name = prefix+"_%N.log",
-            blog_keyw::time_based_rotation =
-                    blog_sink::file::rotation_at_time_point(0, 0, 0),
-            blog_keyw::open_mode = std::ios_base::app,
-            blog_keyw::format = blog_expr::stream
-               // << std::setw(7) << std::setfill(' ') << blog_expr::attr< unsigned int >("LineID") << std::setfill(' ') << " | "
-                << "["   << blog_expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d, %H:%M:%S.%f")
-                << "] [" << blog_expr::format_date_time< blog_attr::timer::value_type >("Uptime", "%O:%M:%S")
-               // << "] [" << blog_expr::format_named_scope("Scope", blog_keyw::format = "%n (%F:%l)")
-                << "] <"  << boost::log::trivial::severity << "> "
-                << blog_expr::message,
-            blog_keyw::auto_flush = true
-            );
+    //     boost::log::add_file_log(
+    //         blog_keyw::file_name = prefix+"_%N.log",
+    //         blog_keyw::time_based_rotation =
+    //                 blog_sink::file::rotation_at_time_point(0, 0, 0),
+    //         blog_keyw::open_mode = std::ios_base::app,
+    //         blog_keyw::format = blog_expr::stream
+    //            // << std::setw(7) << std::setfill(' ') << blog_expr::attr< unsigned int >("LineID") << std::setfill(' ') << " | "
+    //             << "["   << blog_expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d, %H:%M:%S.%f")
+    //             << "] [" << blog_expr::format_date_time< blog_attr::timer::value_type >("Uptime", "%O:%M:%S")
+    //            // << "] [" << blog_expr::format_named_scope("Scope", blog_keyw::format = "%n (%F:%l)")
+    //             << "] <"  << boost::log::trivial::severity << "> "
+    //             << blog_expr::message,
+    //         blog_keyw::auto_flush = true
+    //         );
 
-        // trace debug info warning error fatal
-        boost::log::core::get()->set_filter (
-            boost::log::trivial::severity >= boost::log::trivial::trace);
+    //     // trace debug info warning error fatal
+    //     boost::log::core::get()->set_filter (
+    //         boost::log::trivial::severity >= boost::log::trivial::trace);
 
-        BOOST_LOG_T(info) << "BOOST LOG V2 Initlized OK!";
+    //     BOOST_LOG_T(info) << "BOOST LOG V2 Initlized OK!";
 
-        return;
-    }
+    //     return;
+    // }
 
 }
 

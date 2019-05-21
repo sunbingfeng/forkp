@@ -1,4 +1,4 @@
-#include "general.hpp"
+#include "forkp/general.hpp"
 
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
@@ -21,7 +21,7 @@
 #include <sys/wait.h>
 
 #include <set>
-#include "master.hpp"
+#include "forkp/master.hpp"
 
 namespace forkp {
 
