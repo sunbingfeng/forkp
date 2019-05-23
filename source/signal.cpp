@@ -40,6 +40,7 @@ namespace forkp {
 
     void signalHander(int signo) {
         if (signo == FORKP_SIG_R(FORKP_SIG::CHLD)) {
+            BOOST_LOG_T(error) << "SIGCHLD captured!" << std::endl;
             /**
              * waitpid可能一次信号有多个CHILD就绪，必须放在循环中直到返回0表示处理完毕，
              * 否则会有遗留的僵尸线程问题
@@ -52,14 +53,14 @@ namespace forkp {
                     return;
 
                 if (pid < 0) {
-                    BOOST_LOG_T(error) << "SIGCHLD wait error!";
+                    BOOST_LOG_T(error) << "SIGCHLD wait error!" << std::endl;
                     return;
                 }
 
                 if (WIFEXITED(stat))
-                    BOOST_LOG_T(debug) << "child process " << pid << " exit normal!";
+                    BOOST_LOG_T(debug) << "child process " << pid << " exit normal!" << std::endl;
                 else
-                    BOOST_LOG_T(error) << "child process " << pid << " exit not normal!";
+                    BOOST_LOG_T(error) << "child process " << pid << " exit not normal!" << std::endl;
 
                 MasterIntance.insertDeferWorkPid(pid);
 

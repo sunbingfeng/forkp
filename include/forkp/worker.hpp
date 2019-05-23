@@ -100,7 +100,7 @@ public:
         st_rename_process(proc_title_);
 
         if (!prepStart()) {
-            BOOST_LOG_T(info) << "prepStart error, we abort for " << proc_title_;
+            std::cout << "prepStart error, we abort for " << proc_title_;
             ::abort();
         }
 
@@ -112,10 +112,11 @@ public:
         assert(pid_ == getppid());
         pid_ = getpid();
 
+        std::cout << "Start exec in: " << cwd_ << std::endl;
         // Can not handle exec rename ... but just exec argv[1] specify it!
         // st_rename_process(proc_title_);
         if (cwd_){
-            BOOST_LOG_T(info) << "Changing working dir to " << cwd_;
+            BOOST_LOG_T(info) << "Changing working dir to " << cwd_ << std::endl;
             ::chdir(cwd_);
         }
 
@@ -127,7 +128,7 @@ public:
         ::execv(exec_, exec_argv_);
 
         // if return, err found
-        ::abort();
+        // ::abort();
     }
 
 private:

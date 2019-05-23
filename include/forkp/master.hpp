@@ -70,6 +70,11 @@ public:
         return *master_instance_;
     }
 
+    void stop()
+    {
+        FORKP_SIG_CMD.terminate = true;
+    }
+
     bool user_init_register(const InitFunc& func){
         init_list_.emplace_back(func);
         return true;
@@ -195,6 +200,7 @@ public:
     }
 
     bool terminateWorkerByName(const char* name) {
+        std::vector<pid_t> workers_to_erase(0);
       for (auto& w : workers_) {
         std::cout << w.second->worker->proc_title_ << " , " << name << " , "
                   << strstr(w.second->worker->proc_title_, name) << " , "
@@ -204,11 +210,18 @@ public:
             strstr(name, w.second->worker->proc_title_) != NULL) {
           BOOST_LOG_T(info)
               << "TERMINATE PROCESS: " << w.second->worker->proc_title_
-              << "pid: " << w.second->this_pid;
+              << ", this_pid: " << w.second->this_pid
+              << ",key_pid: " << w.first << std::endl;
 
-          ::kill(w.second->this_pid, SIGTERM);
+          ::kill(w.first, SIGINT);
+          workers_to_erase.push_back(w.first);
           // break;
         }
+      }
+
+      for(auto& pid : workers_to_erase)
+      {
+        workers_.erase(pid);
       }
 
       return true;
@@ -221,10 +234,6 @@ public:
             epollh_->traverseAndHandleEvent(50);
 
             if (FORKP_SIG_CMD.terminate){
-                BOOST_LOG_T(debug) << " !!!!!!!!!!!!!!!!!!!!";
-                BOOST_LOG_T(debug) << " !!!!!!!!!!!!!!!!!!!!";
-                BOOST_LOG_T(debug) << " !!!!!!!!!!!!!!!!!!!!";
-
                 ::exit(EXIT_SUCCESS);
             }
 
@@ -234,7 +243,7 @@ public:
                 if (!workers_.empty()) {
                     shutdownAllChild();
                 } else {
-                    BOOST_LOG_T(info) << "SHUTDOWN children process finished!";
+                    BOOST_LOG_T(info) << "SHUTDOWN children process finished!" << std::endl;
                     FORKP_SIG_CMD.shutdown_child = false;
                 }
             }
@@ -244,7 +253,7 @@ public:
                 if (!workers_.empty()) {
                     shutdownAllChild();
                 } else {
-                    BOOST_LOG_T(info) << "SHUTDOWN children process finished, not respawn them!";
+                    BOOST_LOG_T(info) << "SHUTDOWN children process finished, not respawn them!" << std::endl;
                     FORKP_SIG_CMD.reopen_child = false;
 
                     // 启动的时候，如果启动失败会重新修改dead_workers_容器，干扰迭代器，所以
@@ -254,7 +263,7 @@ public:
                     std::vector<WorkerStat_Ptr> respawn(dead_workers_.cbegin(), dead_workers_.cend());
                     dead_workers_.clear();
                     for (it = respawn.begin(); it != respawn.end(); ++it) {
-                        BOOST_LOG_T(debug) << "respown child process " << (*it)->worker->proc_title_;
+                        BOOST_LOG_T(debug) << "respown child process " << (*it)->worker->proc_title_ << std::endl;
                         trySpawnWorkers(*it);
                     }
                 }
@@ -334,7 +343,7 @@ private:
 
         for (cit = defer_workers_.cbegin(); cit != defer_workers_.cend(); ++cit) {
             if (workers_.find(*cit) == workers_.end()) {
-                BOOST_LOG_T(error) << "get child process obj failed => " << *cit;
+                BOOST_LOG_T(error) << "get child process obj failed => " << *cit << std::endl;
                 continue;
             }
 
@@ -362,8 +371,8 @@ private:
         // else, will append to dead_workers_.
         std::vector<WorkerStat_Ptr>::iterator res;
         for (res = respawn.begin(); res != respawn.end(); ++res) {
-          BOOST_LOG_T(debug)
-              << "respown child process " << (*res)->worker->proc_title_;
+          BOOST_LOG_T(debug) << "respown child process "
+                             << (*res)->worker->proc_title_ << std::endl;
           trySpawnWorkers(*res);
         }
 
@@ -376,7 +385,7 @@ private:
       for (m_it = workers_.cbegin(); m_it != workers_.cend(); ++m_it) {
         BOOST_LOG_T(info) << "TERMINATE PROCESS: "
                           << m_it->second->worker->proc_title_
-                          << "pid: " << m_it->second->this_pid;
+                          << ", pid: " << m_it->second->this_pid << std::endl;
         ::kill(m_it->second->this_pid, SIGTERM);
       }
     }
@@ -560,6 +569,7 @@ private:
 
         return true;
     }
+
 
     // defined at signal.cpp
     static Master* master_instance_;
