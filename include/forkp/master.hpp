@@ -147,9 +147,10 @@ public:
         if (!workstat->start_pid)
             workstat->start_pid = worker_pid;
 
+#if 1   // redirect stdout/stderr to file
         if (workstat->out_log_fd < 0) {
             char file[PATH_MAX];
-            snprintf(file, PATH_MAX, "/tmp/log/%s_%d.log", workstat->worker->proc_title_,
+            snprintf(file, PATH_MAX, "/tmp/%s_%d.log", workstat->worker->proc_title_,
                      workstat->start_pid);
             workstat->out_log_fd = open(file, O_CREAT|O_WRONLY|O_APPEND, 0640);
             if (workstat->out_log_fd < 0)
@@ -166,6 +167,7 @@ public:
             if (!ret)
                 BOOST_LOG_T(error) << "register channel_ failed for " << workstat->worker->channel_.read_;
         }
+#endif
 
         if (workstat->worker->type_ == WorkerType::workerProcess) {
             assert (workstat->worker->notify_.read_ != -1);
@@ -186,9 +188,30 @@ public:
         assert(workers_.find(worker_pid) == workers_.end());
         workers_[worker_pid] = workstat;
 
-        BOOST_LOG_T(debug) << "start worker OK for " << workstat->worker->proc_title_ <<
-            ", with pid=" << worker_pid ;
+        BOOST_LOG_T(debug) << "start worker OK for "
+                           << workstat->worker->proc_title_
+                           << ", with pid=" << worker_pid;
         return true;
+    }
+
+    bool terminateWorkerByName(const char* name) {
+      for (auto& w : workers_) {
+        std::cout << w.second->worker->proc_title_ << " , " << name << " , "
+                  << strstr(w.second->worker->proc_title_, name) << " , "
+                  << strstr(name, w.second->worker->proc_title_) << std::endl;
+
+        if (strstr(w.second->worker->proc_title_, name) != NULL &&
+            strstr(name, w.second->worker->proc_title_) != NULL) {
+          BOOST_LOG_T(info)
+              << "TERMINATE PROCESS: " << w.second->worker->proc_title_
+              << "pid: " << w.second->this_pid;
+
+          ::kill(w.second->this_pid, SIGTERM);
+          // break;
+        }
+      }
+
+      return true;
     }
 
     void masterLoop() {
@@ -257,24 +280,23 @@ public:
         BOOST_LOG_T(info) << "!!!! forkp status info !!!!";
         std::cerr << "!!!! forkp status info !!!!" << std::endl;
 
-        BOOST_LOG_T(info) << "!!!! active workers:" ;
+        BOOST_LOG_T(info) << "!!!! active workers:";
         std::cerr << "!!!! active workers:" << std::endl;
         if (workers_.empty()) {
-            BOOST_LOG_T(info) << "<< None >>" ;
-            std::cerr << "<< None >>" << std::endl;
+          BOOST_LOG_T(info) << "<< None >>";
+          std::cerr << "<< None >>" << std::endl;
         }
+
+        BOOST_LOG_T(info) << "type\tproc\tpid\tstart_pid\tstart_tm\tthis_start_tm\trestart_cnt\n";
         std::map<pid_t, WorkerStat_Ptr>::const_iterator m_it;
         for (m_it = workers_.cbegin(); m_it != workers_.cend(); ++m_it) {
-            BOOST_LOG_T(info) << boost::format("[%c]proc:%s, pid:%d, start_pid:%lu, start_tm:%lu, this_start_tm:%lu, restart_cnt:%lu ")
-            % (m_it->second->worker->type_ == WorkerType::workerProcess ? 'P':'E') %
-                m_it->second->worker->proc_title_ % m_it->second->this_pid % m_it->second->start_pid %
-                m_it->second->start_tm %
-                m_it->second->this_start_tm % m_it->second->restart_cnt;
-            std::cerr << boost::format("[%c]proc:%s, pid:%d, start_pid:%lu, start_tm:%lu, this_start_tm:%lu, restart_cnt:%lu ")
-            % (m_it->second->worker->type_ == WorkerType::workerProcess ? 'P':'E') %
-                m_it->second->worker->proc_title_ % m_it->second->this_pid % m_it->second->start_pid %
-                m_it->second->start_tm %
-                m_it->second->this_start_tm % m_it->second->restart_cnt << std::endl;
+            BOOST_LOG_T(info) << (m_it->second->worker->type_ == WorkerType::workerProcess ? 'P':'E') << "\t"
+                            << m_it->second->worker->proc_title_ << "\t"
+                            << m_it->second->this_pid << "\t"
+                            << m_it->second->start_pid << "\t"
+                            << m_it->second->start_tm << "\t"
+                            << m_it->second->this_start_tm << "\t"
+                            << m_it->second->restart_cnt << std::endl;
         }
 
         BOOST_LOG_T(info) << "!!!! dead workers:" ;
@@ -283,16 +305,17 @@ public:
             BOOST_LOG_T(info) << "<< None >>" << std::endl;
             std::cerr << "<< None >>" << std::endl;
         }
+
+        BOOST_LOG_T(info) << "type\tproc\tpid\tstart_pid\tstart_tm\tthis_start_tm\trestart_cnt\n";
         std::set<WorkerStat_Ptr>::const_iterator s_it;
         for (s_it = dead_workers_.cbegin(); s_it != dead_workers_.cend(); ++s_it) {
-            BOOST_LOG_T(info) << boost::format("[%c]proc:%s, pid:%d, start_pid:%lu, start_tm:%lu, this_start_tm:%lu, restart_cnt:%lu ")
-            % ((*s_it)->worker->type_ == WorkerType::workerProcess ? 'P':'E') %
-                (*s_it)->worker->proc_title_ % (*s_it)->this_pid % (*s_it)->start_pid % (*s_it)->start_tm %
-                (*s_it)->this_start_tm % (*s_it)->restart_cnt;
-            std::cerr << boost::format("[%c]proc:%s, pid:%d, start_pid:%lu, start_tm:%lu, this_start_tm:%lu, restart_cnt:%lu ")
-            % ((*s_it)->worker->type_ == WorkerType::workerProcess ? 'P':'E') %
-                (*s_it)->worker->proc_title_ % (*s_it)->this_pid % (*s_it)->start_pid % (*s_it)->start_tm %
-                (*s_it)->this_start_tm % (*s_it)->restart_cnt << std::endl;
+            BOOST_LOG_T(info) << ((*s_it)->worker->type_ == WorkerType::workerProcess ? 'P':'E') << "\t"
+                            << (*s_it)->worker->proc_title_ << "\t"
+                            << (*s_it)->this_pid << "\t"
+                            << (*s_it)->start_pid << "\t"
+                            << (*s_it)->start_tm << "\t"
+                            << (*s_it)->this_start_tm << "\t"
+                            << (*s_it)->restart_cnt << std::endl;
         }
     }
 
@@ -339,21 +362,23 @@ private:
         // else, will append to dead_workers_.
         std::vector<WorkerStat_Ptr>::iterator res;
         for (res = respawn.begin(); res != respawn.end(); ++res) {
-            BOOST_LOG_T(debug) << "respown child process " << (*res)->worker->proc_title_;
-            trySpawnWorkers(*res);
+          BOOST_LOG_T(debug)
+              << "respown child process " << (*res)->worker->proc_title_;
+          trySpawnWorkers(*res);
         }
 
         return;
     }
 
     void shutdownAllChild() {
-        std::map<pid_t, WorkerStat_Ptr>::const_iterator m_it;
+      std::map<pid_t, WorkerStat_Ptr>::const_iterator m_it;
 
-        for (m_it = workers_.cbegin(); m_it != workers_.cend(); ++m_it) {
-            BOOST_LOG_T(info) << boost::format("SHUTDOWN PROCESS: %s, pid=%lu") %
-                m_it->second->worker->proc_title_ % m_it->second->this_pid;
-            ::kill(m_it->second->this_pid, SIGKILL);
-        }
+      for (m_it = workers_.cbegin(); m_it != workers_.cend(); ++m_it) {
+        BOOST_LOG_T(info) << "TERMINATE PROCESS: "
+                          << m_it->second->worker->proc_title_
+                          << "pid: " << m_it->second->this_pid;
+        ::kill(m_it->second->this_pid, SIGTERM);
+      }
     }
 
     bool watchDogCallback() {
@@ -471,6 +496,7 @@ private:
         if (pid == 0) // child process
         {
 
+#if 1
             // 重定向子进程的输出、标准错误输出到channel
             int ret = 0;
             close(workstat->worker->channel_.read_);
@@ -482,7 +508,7 @@ private:
             if (ret < 0){
                 BOOST_LOG_T(error) << "dup2 STDOUT_FILENO STDERR_FILENO  Error!";
             }
-
+#endif
             if (workstat->worker->type_ == WorkerType::workerProcess) {
                 // notify_
                 close(workstat->worker->notify_.read_);

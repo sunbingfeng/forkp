@@ -48,7 +48,7 @@ public:
         channel_( {-1, -1} )
     {
         strncpy(proc_title_, name, 16);
-        proc_title_[sizeof(proc_title_)-1] = 0;
+        proc_title_[sizeof(proc_title_)-1] = '\0';
     }
 
     Worker(const char* name, const char* cwd,
@@ -64,7 +64,7 @@ public:
         channel_( {-1, -1} )
     {
         strncpy(proc_title_, name, 16);
-        proc_title_[sizeof(proc_title_)-1] = 0;
+        proc_title_[sizeof(proc_title_)-1] = '\0';
     }
 
 
