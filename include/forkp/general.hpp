@@ -8,27 +8,16 @@ using std::endl;
 #include <cstring>
 #include <string>
 using std::string;
-
+#include <vector>
 #include <cstdint>
 using std::int64_t;
 using std::uint64_t;
 
-#include <boost/log/trivial.hpp>
+#include <limits.h>
 
 // C++0x
 #if __cplusplus <= 199711L
 #define nullptr 0
-
-#include <boost/function.hpp>
-using boost::function;
-
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-using boost::shared_ptr;
-using boost::make_shared;
-
-#include <boost/bind.hpp>
-using boost::bind;
 
 #else
 
